@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voither - Playground de Áudio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        /* Estilização customizada para o slider de range */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #3b82f6;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #3b82f6;
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        }
+        .sidebar-item.active {
+            background-color: #eef2ff;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        .sidebar-item.active svg {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="flex h-screen bg-white">
+        <!-- Sidebar -->
+        <aside class="w-64 border-r border-gray-200 flex flex-col">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-2">
+                    <div class="p-2 bg-gray-800 rounded-md">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <span class="text-lg font-semibold">Voither Scribe</span>
+                </div>
+            </div>
+            <nav class="flex-1 p-2 space-y-1">
+                <a href="#" class="sidebar-item flex items-center px-3 py-2 text-sm text-gray-600 rounded-md hover:bg-gray-100">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    Início
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-3 py-2 text-sm text-gray-600 rounded-md hover:bg-gray-100">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    Catálogo de modelos
+                </a>
+                <a href="#" class="sidebar-item active flex items-center px-3 py-2 text-sm rounded-md">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    Playground
+                </a>
+                <a href="#" class="sidebar-item flex items-center px-3 py-2 text-sm text-gray-600 rounded-md hover:bg-gray-100">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    Chat
+                </a>
+                 <a href="#" class="sidebar-item flex items-center px-3 py-2 text-sm text-gray-600 rounded-md hover:bg-gray-100">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Conclusões Armazenadas
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col bg-gray-50">
+            <!-- Header -->
+            <header class="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+                <div>
+                    <h1 class="text-xl font-semibold">Playground de áudio</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="flex items-center text-sm text-gray-600 hover:text-blue-600">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Ajuda
+                    </button>
+                    <img src="https://placehold.co/32x32/E2E8F0/4A5568?text=V" class="w-8 h-8 rounded-full" alt="Avatar do usuário">
+                </div>
+            </header>
+
+            <!-- Content Grid -->
+            <div class="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Configuration Panel -->
+                <div class="lg:col-span-1 bg-white p-6 rounded-lg border border-gray-200 h-fit">
+                    <h2 class="text-lg font-semibold mb-4">Configuração</h2>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label for="deployment" class="block text-sm font-medium text-gray-700 mb-1">Implantação</label>
+                            <select id="deployment" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option>gpt-4o-transcribe (version=2025-02-20)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <h3 class="text-md font-semibold mb-2">Parâmetros</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label for="temperature" class="text-sm font-medium text-gray-700">Temperatura</label>
+                                        <span id="temperature-value" class="text-sm font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-md">0.4</span>
+                                    </div>
+                                    <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.4" oninput="updateTemperatureValue(this.value)">
+                                </div>
+                                <div>
+                                    <label for="language" class="block text-sm font-medium text-gray-700 mb-1">Idioma</label>
+                                    <select id="language" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option>Português</option>
+                                        <option>Inglês</option>
+                                        <option>Espanhol</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="phrases" class="block text-sm font-medium text-gray-700 mb-1">Lista de frases</label>
+                                    <textarea id="phrases" rows="3" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Melhore a precisão da transcrição fornecendo uma lista de frases conhecidas..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transcription Panel -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg border border-gray-200 flex flex-col">
+                    <h2 class="text-lg font-semibold mb-4">Transcrição</h2>
+                    <div class="flex-1 flex flex-col border border-gray-200 rounded-md p-4">
+                       <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium">recording-20250712-165518.wav</span>
+                            <div class="flex items-center space-x-3">
+                                <button class="text-gray-500 hover:text-blue-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg></button>
+                                <button class="text-gray-500 hover:text-blue-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </div>
+                       </div>
+                       <!-- Audio Player Mock -->
+                       <div class="flex items-center space-x-3 mb-4">
+                           <button class="text-blue-600 hover:text-blue-800">
+                               <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+                           </button>
+                           <span class="text-sm text-gray-500">00:00 / 01:50</span>
+                           <div class="flex-1 h-1 bg-gray-200 rounded-full">
+                               <div class="w-1/4 h-full bg-blue-500 rounded-full"></div>
+                           </div>
+                       </div>
+
+                        <div class="flex-1">
+                            <textarea readonly class="w-full h-full p-2 border-none resize-none focus:ring-0 bg-transparent text-gray-700 leading-relaxed">Eu queria desligar desse standard aqui, ainda vou ver se isso funciona também. Eu preciso muito disso com urgência. Então vamos ver se isso funciona mesmo. Testando coisa, isso aqui é ou GPT-4 ou Transcribe. Em português, deixa eu ver aqui os parâmetros. Então aqui, é para você identificar quem português isso aqui é. Mas aparentemente não é muito real. Agora eu vou criar mais um serviço aqui, que é o serviço de Sinal R. Isso aqui é importante. Deixa eu chamar de R, R, R. Vamos lá. Vou criar um esquema, um negócio desse. Nossa gente, que raiva que eu fiquei de ter feito isso. Bora lá. Deixa eu deixar isso no mesmo Brasil, premium 1. Certo. Default, Aqua, Sol, Caralho, Epa. Não, tá tudo bem. Não é até como.</textarea>
+                        </div>
+                        <div class="text-xs text-gray-400 mt-2">
+                            4.26s | 131 palavras
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold text-sm hover:bg-blue-700 flex items-center">
+                            <svg class="w-4 h-4 mr-2" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"></path></svg>
+                            Interromper gravação
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Script simples para atualizar o valor do slider de temperatura
+        function updateTemperatureValue(value) {
+            document.getElementById('temperature-value').textContent = parseFloat(value).toFixed(1);
+        }
+    </script>
+
+</body>
+</html>

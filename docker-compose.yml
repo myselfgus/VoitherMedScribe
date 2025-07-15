@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # Aplicação Web
+  medicalscriber-web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: medicalscriber-web
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=MedicalScribeR;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=true;
+    depends_on:
+      - sql-server
+      - redis
+    networks:
+      - medicalscriber-network
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  # SQL Server
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: medicalscriber-sql
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd
+      - MSSQL_PID=Developer
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - medicalscriber-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: medicalscriber-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - medicalscriber-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Nginx Reverse Proxy (Opcional para produção)
+  nginx:
+    image: nginx:alpine
+    container_name: medicalscriber-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - medicalscriber-web
+    networks:
+      - medicalscriber-network
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  medicalscriber-network:
+    driver: bridge

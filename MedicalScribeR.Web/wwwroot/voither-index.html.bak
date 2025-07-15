@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voither - Medical Scribe</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="progress-bar-container">
+        <div class="progress-bar"></div>
+    </div>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Voither Medical Scribe</a>
+            <span class="navbar-text ms-auto">
+                Bem-vindo(a), Dr. Usuário
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Coluna de Controle e Transcrição -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Controle da Consulta</h5>
+                        <div id="session-info" class="d-none">
+                            <span class="badge bg-secondary me-2">Sessão: <span id="session-id-display"></span></span>
+                            <span class="badge bg-info">Duração: <span id="duration-display">00:00</span></span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-6">
+                                <label for="patient-name" class="form-label">Nome do Paciente</label>
+                                <input type="text" class="form-control" id="patient-name" placeholder="Insira o nome do paciente">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="consultation-type" class="form-label">Tipo de Consulta</label>
+                                <select id="consultation-type" class="form-select">
+                                    <option value="consulta-geral" selected>Consulta Geral</option>
+                                    <option value="retorno">Retorno</option>
+                                    <option value="exames">Análise de Exames</option>
+                                </select>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-center align-items-center gap-3 mt-3">
+                            <button id="start-recording" class="btn btn-success btn-lg">
+                                <i class="fas fa-play-circle me-2"></i> Iniciar Gravação
+                            </button>
+                            <button id="pause-recording" class="btn btn-warning btn-lg d-none">
+                                <i class="fas fa-pause-circle me-2"></i> Pausar
+                            </button>
+                            <button id="stop-recording" class="btn btn-danger btn-lg d-none">
+                                <i class="fas fa-stop-circle me-2"></i> Finalizar
+                            </button>
+                        </div>
+                        <div id="recording-status" class="alert alert-info mt-3 d-none" role="alert">
+                            <span id="status-text">Aguardando início...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Transcrição em Tempo Real</h5>
+                        <div>
+                            <button id="save-transcription" class="btn btn-sm btn-outline-primary" title="Salvar Transcrição">
+                                <i class="fas fa-save"></i>
+                            </button>
+                            <button id="export-transcription" class="btn btn-sm btn-outline-secondary" title="Exportar como TXT">
+                                <i class="fas fa-file-export"></i>
+                            </button>
+                            <button id="clear-transcription" class="btn btn-sm btn-outline-danger" title="Limpar Transcrição">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body" id="transcription-container" style="height: 400px; overflow-y: auto;">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-microphone-slash fa-3x mb-3 opacity-50"></i>
+                            <p>Aguardando início da gravação...</p>
+                            <small>O texto da transcrição aparecerá aqui em tempo real.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna de Agentes e Documentos -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Agentes de IA</h5>
+                    </div>
+                    <div class="card-body" id="agents-status">
+                        <div class="agent-status" data-agent="SummaryAgent">
+                            <i class="fas fa-file-alt me-2"></i>
+                            <span>Agente de Resumo</span>
+                            <span class="badge bg-secondary ms-auto">Inativo</span>
+                        </div>
+                        <div class="agent-status" data-agent="PrescriptionAgent">
+                            <i class="fas fa-pills me-2"></i>
+                            <span>Agente de Prescrição</span>
+                            <span class="badge bg-secondary ms-auto">Inativo</span>
+                        </div>
+                        <div class="agent-status" data-agent="ActionItemAgent">
+                            <i class="fas fa-tasks me-2"></i>
+                            <span>Agente de Ações</span>
+                            <span class="badge bg-secondary ms-auto">Inativo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Documentos Gerados</h5>
+                    </div>
+                    <div class="card-body" id="generated-documents-container" style="max-height: 450px; overflow-y: auto;">
+                        <div id="generated-documents" class="row">
+                             <div class="text-center text-muted py-5">
+                                <i class="fas fa-folder-open fa-3x mb-3 opacity-50"></i>
+                                <p>Nenhum documento gerado ainda.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Healthcare Bot Section -->
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Healthcare Bot</h5>
+                    </div>
+                    <div class="card-body" id="bot-chat-window" style="height: 300px; overflow-y: auto;">
+                        <div class="bot-message">
+                            <p>Olá! Sou seu assistente de IA. Como posso ajudar?</p>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="input-group">
+                            <input type="text" id="bot-input" class="form-control" placeholder="Digite sua pergunta...">
+                            <button class="btn btn-primary" id="bot-send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="notification-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Notificação</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-message">
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    <script src="https://aka.ms/csspeech/js/latest/speech-sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="js/medical-transcription.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!window.medicalTranscriptionInstance) {
+                window.medicalTranscriptionInstance = new MedicalTranscription();
+                // You can pass user-specific data from your backend here
+                window.medicalTranscriptionInstance.init({
+                    userId: '12345', // Example user ID
+                    userName: 'Dr. Smith' // Example user name
+                });
+            }
+        });
+    </script>
+</body>
+</html>

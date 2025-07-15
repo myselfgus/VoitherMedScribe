@@ -1,0 +1,22 @@
+@page
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@using Microsoft.AspNetCore.Mvc
+@using Microsoft.Identity.Web
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    ViewData["Title"] = "Login";
+    var scheme = OpenIdConnectDefaults.AuthenticationScheme;
+    var redirectUri = Url.Action("Index", "Home"); // Redirect to home after login
+}
+
+<h1>Login</h1>
+
+<p>You need to log in to access the Medical Scribe application.</p>
+
+<form method="post" asp-controller="Account" asp-action="SignIn">
+    <button type="submit" class="btn btn-primary">
+        Login with Microsoft Entra ID
+    </button>
+</form>

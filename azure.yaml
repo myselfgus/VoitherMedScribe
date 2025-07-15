@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: medical-scriber
+metadata:
+    template: azd-init@1.17.2
+services:
+    medicalscriber-web:
+        project: MedicalScribeR.Web
+        host: containerapp
+        language: dotnet
+        env:
+            AZURE_SERVICES_INTEGRATED: "true"
+            BUILD_VERSION: "2.2"
+            REDIS_ENABLED: "true"
+            SIGNALR_ENABLED: "true"
+            AZUREML_ENABLED: "true"
+resources:
+    medicalscriber-web:
+        type: host.containerapp
+        port: 8080

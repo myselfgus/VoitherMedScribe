@@ -1,0 +1,759 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedicalScribe - Sistema de Transcrição Médica</title>
+    <script src="https://unpkg.com/@microsoft/signalr@latest/dist/js/signalr.js"></script>
+    <script src="https://alcdn.msauth.net/browser/2.14.2/js/msal-browser.min.js"></script>
+    <script src="https://aka.ms/csspeech/jsbrowserpackageresults"></script>
+    <script src="js/azure-speech.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/medical-production.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8f9fa; }
+        .navbar { box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .panel { background-color: #fff; border-radius: .75rem; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
+        .agent-card.active { border-left: 4px solid #198754; background-color: #d1e7dd; }
+        .login-container { display: flex; justify-content: center; align-items: center; height: 80vh; }
+        .main-container { display: none; }
+        .transcription-text { font-family: 'Courier New', monospace; }
+        .confidence-high { color: #198754; }
+        .confidence-medium { color: #ffc107; }
+        .confidence-low { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <!-- Tela de Login/Loading -->
+    <div id="loginContainer" class="login-container">
+        <div class="text-center">
+            <h1 class="mb-3"><i class="fas fa-stethoscope"></i> MedicalScribe</h1>
+            <p class="lead mb-4">Sistema Inteligente de Transcrição Médica</p>
+            
+            <!-- Loading spinner durante verificação de autenticação -->
+            <div id="authLoadingSpinner" class="mb-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Verificando autenticação...</span>
+                </div>
+                <p class="mt-2 text-muted">Verificando acesso...</p>
+            </div>
+            
+            <!-- Mensagem de erro de autenticação -->
+            <div id="authErrorMessage" class="alert alert-danger d-none" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="authErrorText">Erro de autenticação</span>
+            </div>
+            
+            <!-- Botão de login (inicialmente oculto) -->
+            <div id="loginButton" class="d-none">
+                <button class="btn btn-primary btn-lg" onclick="redirectToLogin()">
+                    <i class="fab fa-microsoft me-2"></i> Entrar com Microsoft
+                </button>
+                <p class="mt-3 text-muted small">Acesso seguro via Azure AD</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div id="mainContainer" class="main-container">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#"><i class="fas fa-stethoscope"></i> MedicalScribe</a>
+                <div class="d-flex align-items-center">
+                    <span id="userName" class="navbar-text me-3">Carregando...</span>
+                    <button class="btn btn-danger btn-sm" id="logoutBtn" onclick="performLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Painel de Controle -->
+                <div class="col-md-4">
+                    <div class="panel p-4 mb-3">
+                        <h4><i class="fas fa-microphone"></i> Controle de Sessão</h4>
+                        <div class="mb-3">
+                            <label for="sessionId" class="form-label">ID da Sessão</label>
+                            <input type="text" class="form-control" id="sessionId" value="SESS-001" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="patientName" class="form-label">Nome do Paciente</label>
+                            <input type="text" class="form-control" id="patientName" placeholder="Digite o nome do paciente">
+                        </div>
+                        <div class="mb-3">
+                            <label for="consultationType" class="form-label">Tipo de Consulta</label>
+                            <select class="form-select" id="consultationType">
+                                <option value="consulta-geral">Consulta Geral</option>
+                                <option value="retorno">Retorno</option>
+                                <option value="emergencia">Emergência</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success btn-lg" id="startBtn" onclick="startSession()">
+                                <i class="fas fa-play"></i> Iniciar Transcrição
+                            </button>
+                            <button class="btn btn-danger btn-lg d-none" id="stopBtn" onclick="stopSession()">
+                                <i class="fas fa-stop"></i> Parar Transcrição
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                Status: <span id="sessionStatus" class="badge bg-secondary">Aguardando</span>
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Status dos Agentes -->
+                    <div class="panel p-4">
+                        <h5><i class="fas fa-robot"></i> Agentes de IA</h5>
+                        <div id="agentStatus">
+                            <div class="agent-card p-2 mb-2 border rounded" id="summary-agent">
+                                <strong>Resumo</strong>
+                                <span class="badge bg-secondary float-end">Inativo</span>
+                            </div>
+                            <div class="agent-card p-2 mb-2 border rounded" id="prescription-agent">
+                                <strong>Prescrições</strong>
+                                <span class="badge bg-secondary float-end">Inativo</span>
+                            </div>
+                            <div class="agent-card p-2 mb-2 border rounded" id="action-agent">
+                                <strong>Ações</strong>
+                                <span class="badge bg-secondary float-end">Inativo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Área de Transcrição -->
+                <div class="col-md-8">
+                    <div class="panel p-4 mb-3">
+                        <h4><i class="fas fa-file-alt"></i> Transcrição em Tempo Real</h4>
+                        <div id="transcriptionOutput" class="transcription-container transcription-text">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-microphone-slash fa-3x mb-3"></i>
+                                <p>Aguardando início da transcrição...</p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="clearTranscription()">
+                                <i class="fas fa-eraser"></i> Limpar
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="exportTranscription()">
+                                <i class="fas fa-download"></i> Exportar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Documentos Gerados -->
+                    <div class="panel p-4">
+                        <h4><i class="fas fa-file-medical"></i> Documentos Gerados</h4>
+                        <div id="generatedDocuments">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-file-medical fa-2x mb-2"></i>
+                                <p>Nenhum documento gerado ainda</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container para Notificações -->
+    <div class="toast-container position-fixed top-0 end-0 p-3 toast-container-app">
+        <div id="notification-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-info-circle me-2" aria-hidden="true"></i>
+                <strong class="me-auto">MedicalScribe</strong>
+                <small class="text-muted">agora</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+            <div class="toast-body">
+                <span id="toast-message">Mensagem de notificação</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none loading-overlay">
+        <div class="d-flex justify-content-center align-items-center h-100">
+            <div class="text-center loading-content">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <h5>Carregando sistema de transcrição...</h5>
+                <p>Por favor, aguarde.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Elemento de preview de transcrição (referenciado no JS) -->
+    <div id="transcription-preview" class="visually-hidden" aria-live="polite"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" 
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" 
+            crossorigin="anonymous"></script>
+
+    <script>
+        // Variáveis Globais
+        let currentSessionId = null;
+        let speechService = null;
+        let isAuthenticated = false;
+        let userInfo = null;
+
+        // Configuração de autenticação
+        const AUTH_CONFIG = {
+            checkUrl: '/Account/AuthStatus',
+            loginUrl: '/Account/Login',
+            logoutUrl: '/Account/Logout'
+        };
+
+        // Inicialização da aplicação
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Inicializando MedicalScribe...');
+            initializeApplication();
+        });
+
+        // Função principal de inicialização
+        async function initializeApplication() {
+            try {
+                showLoadingOverlay(true, 'Inicializando sistema...');
+                
+                // Verificar status de autenticação
+                const authResult = await checkAuthenticationStatus();
+                
+                if (authResult.isAuthenticated) {
+                    await initializeAuthenticatedApp(authResult);
+                } else {
+                    showLoginScreen();
+                }
+                
+            } catch (error) {
+                console.error('Erro na inicialização:', error);
+                showAuthError('Erro ao inicializar o sistema');
+            } finally {
+                showLoadingOverlay(false);
+            }
+        }
+
+        // Verificar status de autenticação via API
+        async function checkAuthenticationStatus() {
+            try {
+                const response = await fetch(AUTH_CONFIG.checkUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Status de autenticação:', data);
+                    return data;
+                } else {
+                    console.warn('Usuário não autenticado');
+                    return { isAuthenticated: false };
+                }
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                return { isAuthenticated: false };
+            }
+        }
+
+        // Inicializar aplicação para usuário autenticado
+        async function initializeAuthenticatedApp(authResult) {
+            try {
+                console.log('Usuário autenticado:', authResult.userName);
+                
+                isAuthenticated = true;
+                userInfo = authResult;
+                
+                // Atualizar UI com informações do usuário
+                updateUserInfo(authResult.userName, authResult.roles || []);
+                
+                // Mostrar interface principal
+                showMainInterface();
+                
+                // Configurar sessão inicial
+                updateSessionId();
+                
+                // Configurar atalhos de teclado
+                setupKeyboardShortcuts();
+                
+                // Verificar permissões
+                checkUserPermissions(authResult.roles || []);
+                
+                showNotification('Sistema carregado com sucesso', 'success');
+                
+            } catch (error) {
+                console.error('Erro ao inicializar app autenticado:', error);
+                showAuthError('Erro ao carregar interface do usuário');
+            }
+        }
+
+        // Mostrar tela de login
+        function showLoginScreen() {
+            console.log('Exibindo tela de login');
+            
+            document.getElementById('authLoadingSpinner').classList.add('d-none');
+            document.getElementById('loginButton').classList.remove('d-none');
+            
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('mainContainer').style.display = 'none';
+        }
+
+        // Mostrar interface principal
+        function showMainInterface() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'block';
+        }
+
+        // Redirecionar para login
+        function redirectToLogin() {
+            console.log('Redirecionando para login...');
+            window.location.href = AUTH_CONFIG.loginUrl;
+        }
+
+        // Realizar logout
+        async function performLogout() {
+            try {
+                console.log('Realizando logout...');
+                showLoadingOverlay(true, 'Fazendo logout...');
+                
+                // Parar qualquer transcrição ativa
+                if (speechService && speechService.isRecording) {
+                    await speechService.stopRecording();
+                }
+                
+                // Limpar dados locais
+                resetSession();
+                
+                // Fazer logout no servidor (POST request)
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = AUTH_CONFIG.logoutUrl;
+                
+                // Adicionar token anti-forgery se disponível
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (token) {
+                    const tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = token;
+                    form.appendChild(tokenInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+                
+            } catch (error) {
+                console.error('Erro no logout:', error);
+                showError('Erro ao fazer logout. Redirecionando...');
+                
+                // Fallback: redirecionamento direto
+                setTimeout(() => {
+                    window.location.href = AUTH_CONFIG.loginUrl;
+                }, 1000);
+            }
+        }
+
+        // Atualizar informações do usuário na UI
+        function updateUserInfo(userName, roles) {
+            const userNameElement = document.getElementById('userName');
+            if (userNameElement) {
+                userNameElement.textContent = userName || 'Usuário';
+                
+                // Adicionar badge de role se for médico
+                if (roles.includes('Doctor') || roles.includes('MedicalProfessional')) {
+                    userNameElement.innerHTML += ' <span class="badge bg-success ms-1">Médico</span>';
+                } else if (roles.includes('Nurse')) {
+                    userNameElement.innerHTML += ' <span class="badge bg-info ms-1">Enfermeiro</span>';
+                } else if (roles.includes('Admin')) {
+                    userNameElement.innerHTML += ' <span class="badge bg-warning ms-1">Admin</span>';
+                }
+            }
+        }
+
+        // Verificar permissões do usuário
+        function checkUserPermissions(roles) {
+            console.log('Roles do usuário:', roles);
+            
+            const hasBasicAccess = roles.includes('Doctor') || 
+                                 roles.includes('Nurse') || 
+                                 roles.includes('MedicalProfessional') ||
+                                 roles.includes('Admin');
+            
+            if (!hasBasicAccess) {
+                showNotification('Atenção: Você pode ter acesso limitado ao sistema', 'warning');
+            }
+            
+            // Desabilitar funcionalidades específicas se necessário
+            const isDoctor = roles.includes('Doctor');
+            const isAdmin = roles.includes('Admin');
+            
+            // Exemplo: apenas médicos podem gerar prescrições
+            const prescriptionFeatures = document.querySelectorAll('[data-requires="doctor"]');
+            prescriptionFeatures.forEach(element => {
+                if (!isDoctor && !isAdmin) {
+                    element.style.opacity = '0.5';
+                    element.title = 'Função disponível apenas para médicos';
+                }
+            });
+        }
+
+        // Mostrar erro de autenticação
+        function showAuthError(message) {
+            document.getElementById('authLoadingSpinner').classList.add('d-none');
+            document.getElementById('authErrorText').textContent = message;
+            document.getElementById('authErrorMessage').classList.remove('d-none');
+            document.getElementById('loginButton').classList.remove('d-none');
+        }
+
+        // Funções de Sessão (mantidas do código original)
+        async function startSession() {
+            try {
+                if (!isAuthenticated) {
+                    showError('Você precisa estar autenticado para iniciar uma sessão');
+                    redirectToLogin();
+                    return;
+                }
+
+                showLoadingOverlay(true, 'Iniciando transcrição...');
+
+                if (!speechService) {
+                    speechService = new AzureSpeechService();
+                    
+                    if (speechService.state === 'initializing') {
+                        await new Promise((resolve, reject) => {
+                            speechService.on('ready', resolve);
+                            speechService.on('error', reject);
+                            setTimeout(() => reject(new Error('Timeout na inicialização')), 10000);
+                        });
+                    }
+                }
+
+                const patientName = document.getElementById('patientName').value;
+                const consultationType = document.getElementById('consultationType').value;
+
+                if (!patientName.trim()) {
+                    throw new Error("Por favor, digite o nome do paciente");
+                }
+
+                currentSessionId = document.getElementById('sessionId').value;
+                
+                await speechService.startContinuousRecognition(currentSessionId, {
+                    language: 'pt-BR',
+                    patientName: patientName,
+                    consultationType: consultationType
+                });
+
+                speechService.on('chunk-processed', (chunk) => {
+                    console.log('Chunk processado:', chunk);
+                });
+
+                speechService.on('agent-activated', (data) => {
+                    console.log('Agente ativado:', data);
+                });
+
+                speechService.on('document-generated', (data) => {
+                    console.log('Documento gerado:', data);
+                });
+
+                showNotification("Transcrição iniciada com sucesso", "success");
+                
+            } catch (error) {
+                console.error("Erro ao iniciar sessão:", error);
+                showError("Erro ao iniciar transcrição: " + error.message);
+            } finally {
+                showLoadingOverlay(false);
+            }
+        }
+
+        async function stopSession() {
+            try {
+                showLoadingOverlay(true, 'Finalizando transcrição...');
+
+                if (speechService) {
+                    await speechService.stopRecording();
+                }
+
+                showNotification("Transcrição finalizada", "info");
+                
+            } catch (error) {
+                console.error("Erro ao parar sessão:", error);
+                showError("Erro ao parar transcrição: " + error.message);
+            } finally {
+                showLoadingOverlay(false);
+            }
+        }
+
+        function resetSession() {
+            if (speechService && !speechService._isDisposed) {
+                speechService.dispose();
+                speechService = null;
+            }
+            
+            currentSessionId = null;
+            isAuthenticated = false;
+            userInfo = null;
+            clearTranscription();
+            clearDocuments();
+            deactivateAgents();
+        }
+
+        function updateSessionId() {
+            const timestamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
+            currentSessionId = 'SESS-' + timestamp;
+            const sessionIdElement = document.getElementById('sessionId');
+            if (sessionIdElement) {
+                sessionIdElement.value = currentSessionId;
+            }
+        }
+
+        // Funções de Agentes (mantidas)
+        function deactivateAgents() {
+            const agents = ['summary-agent', 'prescription-agent', 'action-agent'];
+            agents.forEach(agentId => {
+                const agent = document.getElementById(agentId);
+                if (agent) {
+                    agent.classList.remove('active');
+                    const badge = agent.querySelector('.badge');
+                    if (badge) {
+                        badge.className = 'badge bg-secondary float-end';
+                        badge.textContent = 'Inativo';
+                    }
+                }
+            });
+        }
+
+        // Funções Utilitárias (mantidas)
+        function clearTranscription() {
+            const output = document.getElementById('transcriptionOutput');
+            if (output) {
+                output.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-microphone-slash fa-3x mb-3"></i>
+                        <p>Aguardando início da transcrição...</p>
+                    </div>
+                `;
+            }
+        }
+
+        function clearDocuments() {
+            const container = document.getElementById('generatedDocuments');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-file-medical fa-2x mb-2"></i>
+                        <p>Nenhum documento gerado ainda</p>
+                    </div>
+                `;
+            }
+        }
+
+        function exportTranscription() {
+            try {
+                const content = document.getElementById('transcriptionOutput').innerText;
+                if (!content || content.trim().length === 0) {
+                    showError("Nenhuma transcrição para exportar");
+                    return;
+                }
+                
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `transcricao-${currentSessionId || 'session'}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showNotification("Transcrição exportada com sucesso", "success");
+            } catch (error) {
+                console.error("Erro ao exportar transcrição:", error);
+                showError("Erro ao exportar transcrição");
+            }
+        }
+
+        async function downloadDocument(documentId) {
+            try {
+                showLoadingOverlay(true, 'Baixando documento...');
+
+                const response = await fetch(`/api/document/${documentId}/pdf`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `documento-${documentId}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    showNotification("Documento baixado com sucesso", "success");
+                } else if (response.status === 401) {
+                    showError("Sessão expirada. Redirecionando para login...");
+                    setTimeout(() => redirectToLogin(), 2000);
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error("Erro ao baixar documento:", error);
+                showError("Erro ao baixar documento: " + error.message);
+            } finally {
+                showLoadingOverlay(false);
+            }
+        }
+
+        // Funções de UI (mantidas)
+        function showLoadingOverlay(show, message = 'Carregando...') {
+            const overlay = document.getElementById('loading-overlay');
+            const messageElement = overlay?.querySelector('p');
+            
+            if (overlay) {
+                if (show) {
+                    if (messageElement) messageElement.textContent = message;
+                    overlay.classList.remove('d-none');
+                } else {
+                    overlay.classList.add('d-none');
+                }
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            try {
+                const toastElement = document.getElementById('notification-toast');
+                const messageElement = document.getElementById('toast-message');
+                
+                if (toastElement && messageElement) {
+                    messageElement.textContent = message;
+                    toastElement.className = `toast text-bg-${type}`;
+                    
+                    const icon = toastElement.querySelector('.fas');
+                    if (icon) {
+                        icon.className = getIconClass(type);
+                    }
+                    
+                    const toast = new bootstrap.Toast(toastElement, {
+                        autohide: true,
+                        delay: type === 'error' || type === 'danger' ? 8000 : 4000
+                    });
+                    toast.show();
+                }
+            } catch (error) {
+                console.error('Erro ao exibir notificação:', error);
+                alert(`${type.toUpperCase()}: ${message}`);
+            }
+        }
+
+        function getIconClass(type) {
+            const icons = {
+                success: 'fas fa-check-circle me-2',
+                info: 'fas fa-info-circle me-2',
+                warning: 'fas fa-exclamation-triangle me-2',
+                danger: 'fas fa-exclamation-circle me-2',
+                error: 'fas fa-exclamation-circle me-2'
+            };
+            return icons[type] || icons.info;
+        }
+
+        function showError(message) {
+            showNotification(message, 'danger');
+            console.error(message);
+        }
+
+        // Keyboard shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + Enter: Start/Stop recording
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    
+                    if (speechService && speechService.isRecording) {
+                        stopSession();
+                    } else {
+                        startSession();
+                    }
+                }
+                
+                // Ctrl/Cmd + E: Export transcription
+                if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                    e.preventDefault();
+                    exportTranscription();
+                }
+                
+                // Escape: Stop recording
+                if (e.key === 'Escape' && speechService && speechService.isRecording) {
+                    e.preventDefault();
+                    stopSession();
+                }
+
+                // Ctrl/Cmd + L: Logout
+                if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                    e.preventDefault();
+                    if (confirm('Deseja realmente fazer logout?')) {
+                        performLogout();
+                    }
+                }
+            });
+        }
+
+        // Error handling global
+        window.addEventListener('error', function(e) {
+            console.error('Erro JavaScript global:', e.error);
+            
+            // Verificar se é erro de autenticação
+            if (e.error && e.error.message && e.error.message.includes('401')) {
+                showError('Sessão expirada. Redirecionando para login...');
+                setTimeout(() => redirectToLogin(), 2000);
+            } else {
+                showError('Erro inesperado na aplicação. Verifique o console para detalhes.');
+            }
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Promise rejeitada não tratada:', e.reason);
+            
+            // Verificar se é erro de rede/autenticação
+            if (e.reason && (e.reason.status === 401 || e.reason.message?.includes('401'))) {
+                showError('Sessão expirada. Redirecionando para login...');
+                setTimeout(() => redirectToLogin(), 2000);
+            } else {
+                showError('Erro assíncrono na aplicação. Verifique o console para detalhes.');
+            }
+        });
+
+        // Verificar periodicamente se a sessão ainda é válida
+        function setupSessionCheck() {
+            setInterval(async () => {
+                if (isAuthenticated) {
+                    try {
+                        const authResult = await checkAuthenticationStatus();
+                        if (!authResult.isAuthenticated) {
+                            console.warn('Sessão expirada detectada');
+                            showError('Sua sessão expirou. Redirecionando para login...');
+                            setTimeout(() => redirectToLogin(), 2000);
+                        }
+                    } catch (error) {
+                        console.error('Erro na verificação de sessão:', error);
+                    }
+                }
+            }, 300000); // Verificar a cada 5 minutos
+        }
+
+        // Iniciar verificação de sessão após carregamento
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(setupSessionCheck, 10000); // Começar após 10 segundos
+        });
+    </script>
+</body>
+</html>

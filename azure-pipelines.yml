@@ -1,0 +1,184 @@
+# Azure DevOps Pipeline para MedicalScribeR
+# Configuração de CI/CD para .NET 9 com deploy para Azure
+
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+    - release/*
+  paths:
+    exclude:
+    - README.md
+    - docs/*
+
+pr:
+  branches:
+    include:
+    - main
+    - develop
+
+variables:
+  buildConfiguration: 'Release'
+  dotNetFramework: 'net9.0'
+  dotNetVersion: '9.0.x'
+  azureSubscription: 'Azure-Connection' # Nome da service connection
+  webAppName: 'medicalscriber-web'
+  resourceGroupName: 'rg-medicalscriber'
+
+stages:
+- stage: Build
+  displayName: 'Build and Test'
+  jobs:
+  - job: Build
+    displayName: 'Build Solution'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - checkout: self
+      fetchDepth: 1
+    
+    - task: UseDotNet@2
+      displayName: 'Use .NET 9 SDK'
+      inputs:
+        packageType: 'sdk'
+        version: $(dotNetVersion)
+        includePreviewVersions: true
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet Packages'
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+        feedsToUse: 'select'
+        verbosityRestore: 'Minimal'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Build Solution'
+      inputs:
+        command: 'build'
+        projects: '**/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
+      inputs:
+        command: 'test'
+        projects: '**/MedicalScribeR.Tests/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory $(Agent.TempDirectory)'
+        publishTestResults: true
+    
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish Code Coverage'
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+        reportDirectory: '$(Agent.TempDirectory)/coveragereport'
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Web App'
+      inputs:
+        command: 'publish'
+        publishWebProjects: true
+        projects: '**/MedicalScribeR.Web/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/web'
+        zipAfterPublish: true
+        modifyOutputPath: false
+    
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Build Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+- stage: Deploy_Dev
+  displayName: 'Deploy to Development'
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+  jobs:
+  - deployment: Deploy_Dev
+    displayName: 'Deploy to Dev Environment'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'development'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App (Dev)'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webApp'
+              appName: '$(webAppName)-dev'
+              package: '$(Pipeline.Workspace)/drop/web/*.zip'
+              deploymentMethod: 'zipDeploy'
+              appSettings: |
+                -ASPNETCORE_ENVIRONMENT Development
+                -ConnectionStrings__DefaultConnection "$(DevConnectionString)"
+                -AzureAI__OpenAIEndpoint "$(DevOpenAIEndpoint)"
+                -AzureAI__OpenAIKey "$(DevOpenAIKey)"
+                -AzureAI__SpeechKey "$(DevSpeechKey)"
+                -AzureAI__SpeechRegion "$(DevSpeechRegion)"
+
+- stage: Deploy_Staging
+  displayName: 'Deploy to Staging'
+  dependsOn: Build
+  condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'))
+  jobs:
+  - deployment: Deploy_Staging
+    displayName: 'Deploy to Staging Environment'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'staging'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App (Staging)'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webApp'
+              appName: '$(webAppName)-staging'
+              package: '$(Pipeline.Workspace)/drop/web/*.zip'
+              deploymentMethod: 'zipDeploy'
+              appSettings: |
+                -ASPNETCORE_ENVIRONMENT Staging
+                -ConnectionStrings__DefaultConnection "$(StagingConnectionString)"
+                -AzureAI__OpenAIEndpoint "$(StagingOpenAIEndpoint)"
+                -AzureAI__OpenAIKey "$(StagingOpenAIKey)"
+                -AzureAI__SpeechKey "$(StagingSpeechKey)"
+                -AzureAI__SpeechRegion "$(StagingSpeechRegion)"
+
+- stage: Deploy_Production
+  displayName: 'Deploy to Production'
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: Deploy_Production
+    displayName: 'Deploy to Production Environment'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App (Production)'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webApp'
+              appName: '$(webAppName)'
+              package: '$(Pipeline.Workspace)/drop/web/*.zip'
+              deploymentMethod: 'zipDeploy'
+              appSettings: |
+                -ASPNETCORE_ENVIRONMENT Production
+                -ConnectionStrings__DefaultConnection "$(ProductionConnectionString)"
+                -AzureAI__OpenAIEndpoint "$(ProductionOpenAIEndpoint)"
+                -AzureAI__OpenAIKey "$(ProductionOpenAIKey)"
+                -AzureAI__SpeechKey "$(ProductionSpeechKey)"
+                -AzureAI__SpeechRegion "$(ProductionSpeechRegion)"

@@ -1,0 +1,6 @@
+@Voitmed.Web_HostAddress = https://medicalscriber-web.salmonsky-f64ea152.brazilsouth.azurecontainerapps.io
+
+GET {{Voitmed.Web_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

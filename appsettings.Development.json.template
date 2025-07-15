@@ -1,0 +1,37 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=MedicalScribeR_Dev;Trusted_Connection=true;TrustServerCertificate=true;"
+  },
+  "AzureAI": {
+    "OpenAIEndpoint": "https://your-openai.openai.azure.com/",
+    "OpenAIKey": "your-openai-key-here",
+    "TextAnalyticsEndpoint": "https://your-textanalytics.cognitiveservices.azure.com/",
+    "TextAnalyticsKey": "your-textanalytics-key-here",
+    "SpeechKey": "your-speech-key-here",
+    "SpeechRegion": "brazilsouth"
+  },
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "TenantId": "your-tenant-id-here",
+    "ClientId": "your-client-id-here",
+    "CallbackPath": "/signin-oidc"
+  },
+  "Azure": {
+    "SignalR": {
+      "ConnectionString": ""
+    },
+    "Redis": {
+      "ConnectionString": ""
+    }
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information",
+      "Microsoft.EntityFrameworkCore": "Information",
+      "MedicalScribeR": "Debug"
+    }
+  },
+  "AllowedHosts": "*"
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "Name": "SummaryAgent",
+    "IsEnabled": true,
+    "ConfidenceThreshold": 0.85,
+    "RequiredEntities": [],
+    "TriggeringIntentions": [
+      "RequestSummary",
+      "Conclusion"
+    ]
+  },
+  {
+    "Name": "PrescriptionAgent",
+    "IsEnabled": true,
+    "ConfidenceThreshold": 0.9,
+    "RequiredEntities": [
+      "MedicationName",
+      "Dosage"
+    ],
+    "TriggeringIntentions": [
+      "RequestPrescription"
+    ]
+  },
+  {
+    "Name": "SoapNoteAgent",
+    "IsEnabled": false,
+    "ConfidenceThreshold": 0.8,
+    "RequiredEntities": [
+      "Symptom"
+    ],
+    "TriggeringIntentions": [
+      "RequestSoapNote"
+    ]
+  }
+]

@@ -1,0 +1,32 @@
+- name: PrescriptionAgent
+  description: "Ativado para gerar receitas médicas quando há menção de medicamentos, dosagens ou frequências."
+  instructions: |
+    Você é um especialista em prescrições médicas. Sua função é:
+    1. Analisar medicações, dosagens e frequências mencionadas.
+    2. Estruturar receitas médicas claras e concisas seguindo padrões brasileiros.
+    3. Retornar a receita em formato de texto simples.
+  triggers:
+    intentions:
+      - name: Prescrever
+        threshold: 0.7
+    entities:
+      - category: MedicationName
+      - category: Dosage
+      - category: Frequency
+
+- name: AppointmentAgent
+  description: "Ativado para agendar consultas ou retornos quando há menção de datas ou períodos futuros."
+  instructions: |
+    Você é um especialista em agendamentos. Sua função é:
+    1. Identificar intenções de agendamento e extrair informações temporais (ex: '15 dias', 'próxima semana').
+    2. Integrar com o Microsoft Graph para criar eventos no calendário.
+    3. Confirmar o agendamento.
+  triggers:
+    intentions:
+      - name: Agendar
+        threshold: 0.6
+    keywords:
+      - "retorno"
+      - "agendar"
+      - "próxima consulta"
+      - "marcar"    
