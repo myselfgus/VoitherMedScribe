@@ -45,9 +45,48 @@ dotnet user-secrets set "AzureOpenAI:ApiKey" "sua_chave_real"
 
 ### 5. **Azure Key Vault** (Produção) 🛡️ MAIS SEGURO
 
+**✅ JÁ CONFIGURADO NO SEU PROJETO!**
+
+- **Key Vault**: `MedScriber` 
+- **URL**: `https://medscriber.vault.azure.net/`
+- **Resource Group**: `rg-medicalscribe`
+- **Secrets Cadastrados**: ✅ 9 secrets configurados
+
+**Secrets no Key Vault:**
+- `AzureAd-ClientSecret`
+- `Azure-OpenAI-ApiKey` 
+- `Azure-OpenAI-Secondary-ApiKey`
+- `Azure-TextAnalytics-ApiKey`
+- `Azure-Speech-ApiKey`
+- `Azure-Redis-ConnectionString`
+- `Azure-SignalR-ConnectionString`
+- `DefaultConnection`
+- `ApplicationInsights`
+
+**Como funciona:**
 ```bash
-# Conectar com Key Vault
-az keyvault secret set --vault-name "MeuKeyVault" --name "OpenAIKey" --value "sua_chave"
+# Em produção, o projeto automaticamente carrega do Key Vault
+# Não precisa fazer nada! 🎉
+```
+
+**Para App Services/Container Apps:**
+1. Habilite System Managed Identity
+2. Dê permissão "Key Vault Secrets User" para a identidade
+3. Configure a variável: `AZURE_KEY_VAULT_URL=https://medscriber.vault.azure.net/`
+
+**Comandos úteis:**
+```bash
+# Listar todos os secrets
+az keyvault secret list --vault-name MedScriber --output table
+
+# Ver um secret específico
+az keyvault secret show --vault-name MedScriber --name "AzureAd-ClientSecret"
+
+# Adicionar novo secret
+az keyvault secret set --vault-name MedScriber --name "NovoSecret" --value "valor"
+
+# Deletar secret
+az keyvault secret delete --vault-name MedScriber --name "SecretName"
 ```
 
 ## Como o Sistema Funciona Agora:

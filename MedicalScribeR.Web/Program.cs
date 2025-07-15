@@ -19,13 +19,27 @@ using MedicalScribeR.Infrastructure.Repositories;
 using MedicalScribeR.Web.Hubs;
 using MedicalScribeR.Web.Middleware;
 
-// Carregar arquivo .env se existir
+// Carregar arquivo .env se existir (desenvolvimento)
 if (File.Exists(".env"))
 {
     DotNetEnv.Env.Load();
 }
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configurar Azure Key Vault em produção
+if (builder.Environment.IsProduction())
+{
+    var keyVaultUrl = "https://medscriber.vault.azure.net/";
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUrl),
+        new Azure.Identity.DefaultAzureCredential(),
+        new Azure.Extensions.AspNetCore.Configuration.Secrets.AzureKeyVaultConfigurationOptions
+        {
+            Manager = new Azure.Extensions.AspNetCore.Configuration.Secrets.AzureKeyVaultSecretManager(),
+            ReloadInterval = TimeSpan.FromMinutes(30) // Recarregar secrets a cada 30 minutos
+        });
+}
 
 // 1. Configurar autenticação com Microsoft Entra ID (Azure AD) - RELEASE READY 2025
 // Configurar autenticação com Microsoft Entra ID (Azure AD)
