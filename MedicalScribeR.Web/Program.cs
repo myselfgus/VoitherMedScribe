@@ -19,6 +19,12 @@ using MedicalScribeR.Infrastructure.Repositories;
 using MedicalScribeR.Web.Hubs;
 using MedicalScribeR.Web.Middleware;
 
+// Carregar arquivo .env se existir
+if (File.Exists(".env"))
+{
+    DotNetEnv.Env.Load();
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configurar autenticação com Microsoft Entra ID (Azure AD) - RELEASE READY 2025
