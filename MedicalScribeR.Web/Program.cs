@@ -36,7 +36,7 @@ if (builder.Environment.IsProduction())
         new Azure.Identity.DefaultAzureCredential(),
         new Azure.Extensions.AspNetCore.Configuration.Secrets.AzureKeyVaultConfigurationOptions
         {
-            Manager = new Azure.Extensions.AspNetCore.Configuration.Secrets.AzureKeyVaultSecretManager(),
+            Manager = new Azure.Extensions.AspNetCore.Configuration.Secrets.KeyVaultSecretManager(),
             ReloadInterval = TimeSpan.FromMinutes(30) // Recarregar secrets a cada 30 minutos
         });
 }
@@ -229,6 +229,18 @@ builder.Services.AddSingleton<IAzureAIService, MedicalScribeR.Core.Services.Azur
 builder.Services.AddSingleton<AgentConfigLoader>();
 builder.Services.AddSingleton<IPdfGenerationService, PdfGenerationService>();
 builder.Services.AddScoped<AzureMLService>();
+
+// 5a. Registrar serviços avançados de Healthcare AI - FUNDAMENTAIS
+builder.Services.AddScoped<AzureHealthcareNLPService>();
+builder.Services.AddScoped<AzureHealthInsightsService>();
+builder.Services.AddScoped<AzureHealthcareApisService>();
+builder.Services.AddScoped<HealthcareAIPipelineService>();
+builder.Services.AddScoped<AzureHealthBotService>();
+
+// Configurar HttpClients para os serviços Healthcare
+builder.Services.AddHttpClient<AzureHealthInsightsService>();
+builder.Services.AddHttpClient<AzureHealthcareApisService>();
+builder.Services.AddHttpClient<AzureHealthBotService>();
 
 // 6. Registrar agentes especializados
 builder.Services.AddScoped<PrescriptionAgent>();

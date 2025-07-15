@@ -1,6 +1,0 @@
-SPEECH_RESOURCE_KEY=your_speech_resource_key_here
-SERVICE_REGION=your_service_region
-AZURE_SUBSCRIPTION_ID=your_subscription_id_here
-TENANT_ID=your_tenant_id_here
-SPEECH_RESOURCE_NAME=your_speech_resource_name
-SPEECH_RESOURCE_SKU=S0

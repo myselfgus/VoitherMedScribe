@@ -213,6 +213,13 @@ class MedicalTranscription {
 
     handleTranscriptionUpdate(data) {
         this.displayTranscriptionChunk(data);
+        
+        // Notificar Health Bot sobre nova transcrição
+        if (typeof notifyHealthBotOfTranscription === 'function' && data.Text) {
+            const sessionId = document.getElementById('sessionId')?.value || 'unknown';
+            const consultationType = document.getElementById('consultationType')?.value || 'consulta-geral';
+            notifyHealthBotOfTranscription(sessionId, data.Text, consultationType);
+        }
     }
 
     handleAgentActivated(data) {

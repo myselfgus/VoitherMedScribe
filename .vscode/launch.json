@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "coreclr",
+      "request": "launch",
+      "name": "Launch MedicalScribeR.Web",
+      "program": "${workspaceFolder}/MedicalScribeR.Web/bin/Debug/net9.0/MedicalScribeR.Web.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/MedicalScribeR.Web",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "preLaunchTask": "build"
+    }
+  ]
+}
